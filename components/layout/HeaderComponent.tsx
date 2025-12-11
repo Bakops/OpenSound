@@ -11,9 +11,9 @@ export default function HeaderComponent() {
   };
 
   return (
-    <header className="fixed header px-4 lg:px-6 h-16 w-full flex items-center border-b bg-white shadow-md z-50">
+    <header className="fixed inset-x-0 top-0 px-4 lg:px-6 h-16 w-full flex items-center border-b bg-white shadow-md z-50">
       <Link className="flex items-center justify-center" href="/">
-        <div className="text-[30px] text-transparent bg-clip-text bg-linear-to-r tracking-[-1px] from-red-500 to-purple-900 font-poppins font-bold flex flex-row items-center justify-center gap-1">
+        <div className="text-[30px] tracking-[-3px] font-bold text-transparent bg-clip-text bg-linear-to-r tracking-[-1px] from-red-500 to-purple-900 font-poppins font-bold flex flex-row items-center justify-center gap-1">
          OpenSound
         </div>
       </Link>

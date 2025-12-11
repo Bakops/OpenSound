@@ -2,10 +2,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-function Hero() {
+export default function Hero() {
   const [titleNumber, setTitleNumber] = useState(0);
   const titles = useMemo(
-    () => ["données", "modèles", "prédictions", "tendances", "insights"],
+    () => ["talents", "singles", "albums", "tournées", "fans"],
     []
   );
 
@@ -24,18 +24,17 @@ function Hero() {
     <div className="w-full">
       <div className="container mx-auto">
         <div className="flex gap-8 p-10 items-center justify-center flex-col">
-          <div className="flex gap-4 flex-col text-[#727272]">
+          <div className="flex gap-4 flex-col items-center text-[#727272]">
             <h1 className="text-5xl md:text-7xl max-w-6xl tracking-tighter text-center font-regular">
               <span className="text-spektr-cyan-50 font-outfit font-bold">
-                Analysez le passé, comprenez le présent, anticipez l’avenir avec
-                les
+                Open Sound, le label qui révèle et propulse les
               </span>
-              <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
+              <span className="relative flex justify-center overflow-hidden h-14 xs:h-16 sm:h-20 md:h-24 mt-3 w-full">
                 &nbsp;
                 {titles.map((title, index) => (
                   <motion.span
                     key={index}
-                    className="absolute font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#98ff87] to-[#3d96ff] italic"
+                    className="absolute h-24 font-semibold text-transparent bg-clip-text bg-linear-to-r from-red-500 to-purple-900 "
                     initial={{ opacity: 0, y: "-100" }}
                     transition={{ type: "spring", stiffness: 50 }}
                     animate={
@@ -56,11 +55,11 @@ function Hero() {
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl leading-relaxed tracking-tight  max-w-6xl text-center text-[#000]">
-              Avec EpiViz, plongez dans les données historiques des pandémies
-              pour identifier des tendances, générer des prévisions et prendre
-              des actions stratégiques. Un outil conçu pour les chercheurs,
-              décideurs et professionnels de la santé publique.
+            <p className="text-lg w-3xl justify-center align-middle md:text-md leading-relaxed tracking-tight  max-w-6xl text-center text-black">
+              Open Sound accompagne les artistes, producteurs et managers pour
+              créer, distribuer et faire rayonner leurs projets. De la découverte
+              des talents au développement international, nous orchestrons chaque
+              étape pour que vos morceaux trouvent leur public.
             </p>
           </div>
         </div>
