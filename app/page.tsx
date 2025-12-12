@@ -16,7 +16,7 @@ export default function Home() {
  <div className="flex flex-col min-h-screen">
       <HeaderComponent />
       <main className="flex-1">
-        <section className=" bg-[#FFF] h-[45rem] w-full py-12 md:py-24 lg:py-32 flex items-center justify-center">
+        <section className=" bg-[#FFF] h-180 w-full py-12 md:py-24 lg:py-32 flex items-center justify-center">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <Hero />
@@ -37,7 +37,7 @@ export default function Home() {
                 >
                   <Button
                     variant="outline"
-                    className="cursor-pointer hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r from-red-500 to-purple-900 font-bold"
+                    className="cursor-pointer hover:text-transparent hover:bg-clip-text hover:bg-linear-to-r from-red-500 to-purple-900 font-bold"
                   >
                     Documentation API
                   </Button>
