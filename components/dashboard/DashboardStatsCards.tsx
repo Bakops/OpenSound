@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Stats = {
-  cas_confirmes: number;
-  deces: number;
-  new_cases: number;
-  new_deaths: number;
+  total_streams: number;
+  total_artists: number;
+  avg_popularity: number;
+  new_releases: number;
 };
 
 type Localisation = {
@@ -49,8 +49,8 @@ export default function DashboardStatsCards({
           ) : (
             <>
               <div className="text-2xl font-bold">
-                {(typeof stats.cas_confirmes === "number"
-                  ? stats.cas_confirmes
+                {(typeof stats.total_streams === "number"
+                  ? stats.total_streams
                   : 0
                 ).toLocaleString()}
               </div>
@@ -71,8 +71,8 @@ export default function DashboardStatsCards({
           ) : (
             <>
               <div className="text-2xl font-bold">
-                {(typeof stats.deces === "number"
-                  ? stats.deces
+                {(typeof stats.avg_popularity === "number"
+                  ? stats.avg_popularity
                   : 0
                 ).toLocaleString()}
               </div>
@@ -93,8 +93,8 @@ export default function DashboardStatsCards({
           ) : (
             <>
               <div className="text-2xl font-bold">
-                {(typeof stats.new_cases === "number"
-                  ? stats.new_cases
+                {(typeof stats.new_releases === "number"
+                  ? stats.new_releases
                   : 0
                 ).toLocaleString()}
               </div>
@@ -105,7 +105,7 @@ export default function DashboardStatsCards({
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-[#FF9F40]">Variation de streams</CardTitle>
+          <CardTitle className="text-[#FF9F40]">Total des artistes</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -115,8 +115,8 @@ export default function DashboardStatsCards({
           ) : (
             <>
               <div className="text-2xl font-bold">
-                {(typeof stats.new_deaths === "number"
-                  ? stats.new_deaths
+                {(typeof stats.total_artists === "number"
+                  ? stats.total_artists
                   : 0
                 ).toLocaleString()}
               </div>

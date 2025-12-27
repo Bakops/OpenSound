@@ -1,11 +1,10 @@
 import axios from "axios";
-import { Calendrier } from "../models/Calendrier";
-import { Region } from "../models/Region";
-import { Genre } from "../models/Genre";
+
 
 const api = axios.create({
   baseURL: "http://localhost:8081/api/v1",
 });
+
 
 export const getGenres = async () => {
   try {
@@ -17,70 +16,17 @@ export const getGenres = async () => {
   }
 };
 
-export const getCalendars = async () => {
-  try {
-    const response = await api.get("/calendar");
-    return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des calendriers :", error);
-    return [];
-  }
-};
-
 export const getAllRegions = async () => {
   try {
     const response = await api.get("/region");
-    let data = response.data;
-
-    if (typeof data === "string") {
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        console.error("Impossible de parser les données de région:", e);
-        return [];
-      }
-    }
-
-    if (!Array.isArray(data)) {
-      console.error(
-        "Les données de région ne sont pas un tableau:",
-        data
-      );
-
-      if (data && typeof data === "object") {
-        if (Array.isArray(data.content)) return data.content;
-        if (Array.isArray(data.regions)) return data.regions;
-        if (Array.isArray(data.items)) return data.items;
-
-        return Object.values(data).filter(
-          (item) => item && typeof item === "object"
-        );
-      }
-
-      return [];
-    }
-
-    return data.map((region) => ({
-      id: region.id,
-      name: region.name || region.nom,
-      continent: region.continent,
-      country: region.country,
-    }));
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error("Erreur lors de la récupération des régions :", error);
     return [];
   }
 };
 
-export const getAllData = async () => {
-  try {
-    const response = await api.get("/music-data");
-    return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des données :", error);
-    return [];
-  }
-};
+// Conservé: récupérations agrégées pour le dashboard
 
 export const getGlobalMusicData = async (genreId: string) => {
   try {
@@ -309,105 +255,5 @@ export const getRegionMusicData = async (
       new_releases: 0,
       timeline: [],
     };
-  }
-};
-
-export const createMusicData = async (data: Record<string, unknown>) => {
-  try {
-    const response = await api.post("/music-data", data);
-    return response.data;
-  } catch (error) {
-    console.error("Erreur lors de la création des données :", error);
-    throw error;
-  }
-};
-
-export const exportGenreData = async (genreId: number) => {
-  try {
-    const response = await api.get(`/genre/${genreId}/export`, {
-      responseType: "blob",
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Erreur lors de l'exportation des données :", error);
-    throw error;
-  }
-};
-
-export const createRegion = async (region: Region) => {
-  const response = await fetch("http://localhost:8081/api/v1/region", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(region),
-  });
-  return response.json();
-};
-
-export const createGenre = async (genre: Genre) => {
-  const response = await fetch("http://localhost:8081/api/v1/genre", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(genre),
-  });
-  return response.json();
-};
-
-export const createCalendrier = async (calendrier: Calendrier) => {
-  const response = await fetch("http://localhost:8081/api/v1/calendrier", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(calendrier),
-  });
-  return response.json();
-};
-
-export const deleteMusicData = async (id: number) => {
-  try {
-    await api.delete(`/api/v1/music-data/${id}`);
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const updateMusicData = async (id: number, data: unknown) => {
-  try {
-    const response = await api.put(`/api/v1/music-data/${id}`, data);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const deleteRegion = async (id: number) => {
-  try {
-    await api.delete(`/api/v1/region/${id}`);
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const updateRegion = async (id: number, data: unknown) => {
-  try {
-    const response = await api.put(`/api/v1/region/${id}`, data);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const deleteGenre = async (id: number) => {
-  try {
-    await api.delete(`/api/v1/genre/${id}`);
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const updateGenre = async (id: number, data: unknown) => {
-  try {
-    const response = await api.put(`/api/v1/genre/${id}`, data);
-    return response.data;
-  } catch (error) {
-    throw error;
   }
 };

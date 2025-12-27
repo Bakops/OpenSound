@@ -5,6 +5,7 @@ import DashboardStatsCards from "@/components/dashboard/DashboardStatsCards";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import HeaderComponent from "@/components/layout/HeaderComponent";
 import { getAllRegions, getGenres, getGlobalMusicData, getRegionMusicData } from "@/service/api";
+import { getTopGenres, getTopDecades, getDurationPopularityCorrelation } from "@/service/etl";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -15,7 +16,7 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -86,6 +87,12 @@ export default function DashboardPage() {
   const [timeline, setTimeline] = useState<TimelineItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // États pour les données ETL
+  const [etlDataset, setEtlDataset] = useState<"high" | "low">("high");
+  const [topGenresData, setTopGenresData] = useState<Record<string, number>>({});
+  const [topDecadesData, setTopDecadesData] = useState<Record<number, number>>({});
+  const [correlationData, setCorrelationData] = useState<number | null>(null);
 
   const [chartData, setChartData] = useState<ChartData>({
     labels: [],
@@ -164,24 +171,7 @@ export default function DashboardPage() {
     fetchGenres();
   }, []);
 
-  useEffect(() => {
-    if (selectedGenre) {
-      if (selectedRegion) {
-        fetchRegionData(selectedRegion, selectedGenre);
-      } else {
-        fetchGlobalData(selectedGenre);
-      }
-    }
-  }, [selectedGenre, selectedRegion]);
-
-  useEffect(() => {
-    if (timeline) {
-      const filtered = filterTimelineByTimeframe(timeline, selectedTimeframe);
-      updateChartData(filtered);
-    }
-  }, [selectedTimeframe, timeline]);
-
-  const filterTimelineByTimeframe = (data: TimelineItem[], timeframe: string) => {
+  const filterTimelineByTimeframe = useCallback((data: TimelineItem[], timeframe: string) => {
     if (!data || data.length === 0) return [];
 
     const len = data.length;
@@ -197,16 +187,16 @@ export default function DashboardPage() {
       default:
         return data;
     }
-  };
+  }, []);
 
-  const normalizeData = (item: TimelineItem, property: string): number => {
+  const normalizeData = useCallback((item: TimelineItem, property: string): number => {
     const value = item[property];
     if (value === null || value === undefined) return 0;
     const numberValue = Number(value);
     return isNaN(numberValue) ? 0 : numberValue;
-  };
+  }, []);
 
-  const updateChartData = (timelineData: TimelineItem[]) => {
+  const updateChartData = useCallback((timelineData: TimelineItem[]) => {
     if (!timelineData || timelineData.length === 0) {
       console.warn("Aucune donnée de timeline disponible");
       setChartData((prev) => ({
@@ -223,7 +213,7 @@ export default function DashboardPage() {
           return "Date invalide";
         }
         return new Date(item.dateValue).toLocaleDateString();
-      } catch (e) {
+      } catch {
         console.error("Date invalide:", item.date);
         return "Date invalide";
       }
@@ -236,9 +226,24 @@ export default function DashboardPage() {
       normalizeData(item, "totalArtists")
     );
 
-    const avgPopularity = timelineData.map((item) =>
-      normalizeData(item, "avgPopularity")
-    );
+    // Intégrer les données ETL - popularité moyenne des top genres
+    const genrePopularity = Object.values(topGenresData);
+    const avgETLPopularity = genrePopularity.length > 0 
+      ? genrePopularity.reduce((a, b) => a + b, 0) / genrePopularity.length
+      : 0;
+    
+    // Utiliser aussi les décennies pour enrichir les données
+    const decadePopularity = Object.values(topDecadesData);
+    const avgDecadePopularity = decadePopularity.length > 0
+      ? decadePopularity.reduce((a, b) => a + b, 0) / decadePopularity.length
+      : 0;
+    
+    const avgPopularity = timelineData.map((item) => {
+      const basePopularity = normalizeData(item, "avgPopularity");
+      // Ajouter l'influence des données ETL (pondération 60/25/15)
+      return basePopularity * 0.6 + avgETLPopularity * 0.25 + avgDecadePopularity * 0.15;
+    });
+    
     const newReleases = timelineData.map((item) =>
       normalizeData(item, "newReleases")
     );
@@ -270,9 +275,9 @@ export default function DashboardPage() {
         { ...chartData.datasets[3], data: newReleases },
       ],
     });
-  };
+  }, [topGenresData, topDecadesData, chartData.datasets, normalizeData]);
 
-  const fetchGlobalData = async (genreId: string) => {
+  const fetchGlobalData = useCallback(async (genreId: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -309,9 +314,9 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTimeframe, filterTimelineByTimeframe, updateChartData]);
 
-  const fetchRegionData = async (regionId: string, genreId: string) => {
+  const fetchRegionData = useCallback(async (regionId: string, genreId: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -344,7 +349,43 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTimeframe, filterTimelineByTimeframe, updateChartData]);
+
+  // Charger les données ETL
+  useEffect(() => {
+    async function fetchETLData() {
+      try {
+        const [genresRes, decadesRes, corrRes] = await Promise.all([
+          getTopGenres(etlDataset, 5),
+          getTopDecades(etlDataset, 5),
+          getDurationPopularityCorrelation(etlDataset),
+        ]);
+        setTopGenresData(genresRes.top_genres);
+        setTopDecadesData(decadesRes.top_decades);
+        setCorrelationData(corrRes.correlation);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données ETL:", error);
+      }
+    }
+    fetchETLData();
+  }, [etlDataset]);
+
+  useEffect(() => {
+    if (selectedGenre) {
+      if (selectedRegion) {
+        fetchRegionData(selectedRegion, selectedGenre);
+      } else {
+        fetchGlobalData(selectedGenre);
+      }
+    }
+  }, [selectedGenre, selectedRegion, fetchGlobalData, fetchRegionData]);
+
+  useEffect(() => {
+    if (timeline) {
+      const filtered = filterTimelineByTimeframe(timeline, selectedTimeframe);
+      updateChartData(filtered);
+    }
+  }, [selectedTimeframe, timeline, filterTimelineByTimeframe, updateChartData]);
 
   const handleRegionChange = (regionId: string) => {
     if (regionId === "global") {
@@ -410,17 +451,27 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <DashboardSelectors
-          pandemics={genres}
-          localisations={regions}
-          selectedPandemic={selectedGenre}
-          setSelectedPandemic={setSelectedGenre}
-          selectedLocalisation={selectedRegion}
-          handleLocalisationChange={handleRegionChange}
-          selectedTimeframe={selectedTimeframe}
-          setSelectedTimeframe={setSelectedTimeframe}
-          handleExportData={handleExportData}
-        />
+        <div className="flex flex-col gap-4">
+
+          
+          {/* Sélecteur de dataset ETL */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg">
+            <label className="text-sm font-bold text-[#6B6B6B]">Données Spotify ETL :</label>
+            <select
+              className="border rounded px-3 py-1.5 text-sm"
+              value={etlDataset}
+              onChange={(e) => setEtlDataset(e.target.value as "high" | "low")}
+            >
+              <option value="high">Haute popularité</option>
+              <option value="low">Faible popularité</option>
+            </select>
+            {correlationData !== null && (
+              <span className="text-sm text-gray-600 ml-auto">
+                Corrélation durée/popularité : <strong>{correlationData.toFixed(3)}</strong>
+              </span>
+            )}
+          </div>
+        </div>
 
         <DashboardStatsCards
           stats={stats}
@@ -434,11 +485,12 @@ export default function DashboardPage() {
           chartOptions={chartOptions}
           localisations={regions}
           selectedLocalisation={selectedRegion}
-          selectedPandemic={selectedGenre}
           handleLocationClick={handleRegionClick}
-          timeline={timeline}
+          timeline={timeline || []}
           isLoading={isLoading}
+          etlDataset={etlDataset}
         />
+
       </main>
     </div>
   );
