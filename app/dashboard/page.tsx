@@ -93,6 +93,10 @@ export default function DashboardPage() {
   const [topGenresData, setTopGenresData] = useState<Record<string, number>>({});
   const [topDecadesData, setTopDecadesData] = useState<Record<number, number>>({});
   const [correlationData, setCorrelationData] = useState<number | null>(null);
+  
+  // Filtres ETL additionnels
+  const [topNResults, setTopNResults] = useState<number>(5);
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   const [chartData, setChartData] = useState<ChartData>({
     labels: [],
@@ -356,19 +360,33 @@ export default function DashboardPage() {
     async function fetchETLData() {
       try {
         const [genresRes, decadesRes, corrRes] = await Promise.all([
-          getTopGenres(etlDataset, 5),
-          getTopDecades(etlDataset, 5),
+          getTopGenres(etlDataset, topNResults),
+          getTopDecades(etlDataset, topNResults),
           getDurationPopularityCorrelation(etlDataset),
         ]);
-        setTopGenresData(genresRes.top_genres);
-        setTopDecadesData(decadesRes.top_decades);
+        
+        // Appliquer le tri si nécessaire
+        let sortedGenres = genresRes.top_genres;
+        let sortedDecades = decadesRes.top_decades;
+        
+        if (sortOrder === "asc") {
+          sortedGenres = Object.fromEntries(
+            Object.entries(sortedGenres).sort(([, a], [, b]) => a - b)
+          );
+          sortedDecades = Object.fromEntries(
+            Object.entries(sortedDecades).sort(([, a], [, b]) => a - b)
+          );
+        }
+        
+        setTopGenresData(sortedGenres);
+        setTopDecadesData(sortedDecades);
         setCorrelationData(corrRes.correlation);
       } catch (error) {
         console.error("Erreur lors du chargement des données ETL:", error);
       }
     }
     fetchETLData();
-  }, [etlDataset]);
+  }, [etlDataset, topNResults, sortOrder]);
 
   useEffect(() => {
     if (selectedGenre) {
@@ -452,24 +470,65 @@ export default function DashboardPage() {
         )}
 
         <div className="flex flex-col gap-4">
+          {/* Contrôles ETL - Filtres et Options de visualisation */}
+          <div className="bg-white rounded-lg p-4 shadow-md border border-gray-200">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-1 h-8 bg-gradient-to-b from-red-500 to-purple-900 rounded-full"></div>
+              <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-900 font-poppins">
+                Filtres et Visualisation ETL Spotify
+              </h3>
+            </div>
+            
+            {/* Ligne 1: Dataset et Nombre de résultats */}
+            <div className="flex flex-wrap items-center gap-4 mb-5">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-[#6B6B6B] font-poppins">Dataset :</label>
+                <select
+                  className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all font-poppins shadow-sm"
+                  value={etlDataset}
+                  onChange={(e) => setEtlDataset(e.target.value as "high" | "low")}
+                >
+                  <option value="high">Haute popularité</option>
+                  <option value="low">Faible popularité</option>
+                </select>
+              </div>
 
-          
-          {/* Sélecteur de dataset ETL */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg">
-            <label className="text-sm font-bold text-[#6B6B6B]">Données Spotify ETL :</label>
-            <select
-              className="border rounded px-3 py-1.5 text-sm"
-              value={etlDataset}
-              onChange={(e) => setEtlDataset(e.target.value as "high" | "low")}
-            >
-              <option value="high">Haute popularité</option>
-              <option value="low">Faible popularité</option>
-            </select>
-            {correlationData !== null && (
-              <span className="text-sm text-gray-600 ml-auto">
-                Corrélation durée/popularité : <strong>{correlationData.toFixed(3)}</strong>
-              </span>
-            )}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-[#6B6B6B] font-poppins">Top N résultats :</label>
+                <select
+                  className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all font-poppins shadow-sm"
+                  value={topNResults}
+                  onChange={(e) => setTopNResults(Number(e.target.value))}
+                >
+                  <option value={3}>Top 3</option>
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
+                  <option value={15}>Top 15</option>
+                  <option value={20}>Top 20</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-[#6B6B6B] font-poppins">Tri :</label>
+                <select
+                  className="border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all font-poppins shadow-sm"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as "desc" | "asc")}
+                >
+                  <option value="desc">↓ Décroissant</option>
+                  <option value="asc">↑ Croissant</option>
+                </select>
+              </div>
+
+              {correlationData !== null && (
+                <div className="ml-auto px-4 py-2.5 bg-gradient-to-r from-red-50 to-purple-50 rounded-lg border border-red-200 shadow-sm">
+                  <span className="text-sm font-poppins">
+                    <span className="text-gray-600">Corrélation durée/popularité : </span>
+                    <strong className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-900">{correlationData.toFixed(3)}</strong>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -489,6 +548,8 @@ export default function DashboardPage() {
           timeline={timeline || []}
           isLoading={isLoading}
           etlDataset={etlDataset}
+          topGenresData={topGenresData}
+          topDecadesData={topDecadesData}
         />
 
       </main>

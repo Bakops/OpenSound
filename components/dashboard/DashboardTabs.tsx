@@ -29,6 +29,8 @@ type Props = {
   }[];
   isLoading: boolean;
   etlDataset?: "high" | "low";
+  topGenresData?: Record<string, number>;
+  topDecadesData?: Record<number, number>;
 };
 
 export default function DashboardTabs({
@@ -37,23 +39,26 @@ export default function DashboardTabs({
   timeline,
   isLoading,
   etlDataset = "high",
+  topGenresData: propsGenresData,
+  topDecadesData: propsDecadesData,
 }: Props) {
-  const [topGenresData, setTopGenresData] = useState<Record<string, number>>({});
-  const [topDecadesData, setTopDecadesData] = useState<Record<number, number>>({});
+  const [topGenresData, setTopGenresData] = useState<Record<string, number>>(propsGenresData || {});
+  const [topDecadesData, setTopDecadesData] = useState<Record<number, number>>(propsDecadesData || {});
   const [correlationData, setCorrelationData] = useState<number | null>(null);
   const [etlLoading, setEtlLoading] = useState(false);
+
+  // Update local state when props change
+  useEffect(() => {
+    if (propsGenresData) setTopGenresData(propsGenresData);
+    if (propsDecadesData) setTopDecadesData(propsDecadesData);
+  }, [propsGenresData, propsDecadesData]);
 
   useEffect(() => {
     async function fetchETLData() {
       setEtlLoading(true);
       try {
-        const [genresRes, decadesRes, corrRes] = await Promise.all([
-          getTopGenres(etlDataset, 10),
-          getTopDecades(etlDataset, 10),
-          getDurationPopularityCorrelation(etlDataset),
-        ]);
-        setTopGenresData(genresRes.top_genres);
-        setTopDecadesData(decadesRes.top_decades);
+        // Only fetch correlation, genres and decades data come from props
+        const corrRes = await getDurationPopularityCorrelation(etlDataset);
         setCorrelationData(corrRes.correlation);
       } catch (error) {
         console.error("Erreur ETL:", error);
@@ -140,8 +145,12 @@ export default function DashboardTabs({
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-          ) : (
+          ) : Object.keys(topGenresData).length > 0 ? (
             <Bar data={genresChartData} options={genresBarOptions} />
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              Aucune donnée de genres disponible
+            </div>
           )}
         </div>
       </TabsContent>
@@ -152,8 +161,12 @@ export default function DashboardTabs({
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
-          ) : (
+          ) : Object.keys(topDecadesData).length > 0 ? (
             <Bar data={decadesChartData} options={decadesBarOptions} />
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              Aucune donnée de décennies disponible
+            </div>
           )}
         </div>
       </TabsContent>
